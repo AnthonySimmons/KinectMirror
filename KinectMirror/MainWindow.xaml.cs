@@ -32,7 +32,7 @@ namespace KinectMirror
         /// Pen used for drawing bones that are currently inferred
         /// </summary>        
         private readonly Pen _inferredBonePen = new Pen(Brushes.Gray, 1);
-        
+
         /// <summary>
         /// Brush used for drawing joints that are currently tracked
         /// </summary>
@@ -69,6 +69,8 @@ namespace KinectMirror
 
         private DrawingImage _drawingImage;
 
+        private WriteableBitmap _colorBitmap;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -80,11 +82,26 @@ namespace KinectMirror
             {
                 _kinectManager = new KinectManager();
                 _kinectManager.SkeletonFrameReadyHandler += KinectManager_SkeletonFrameReadyHandler;
+                _kinectManager.ColorFrameReadyHandler += KinectManager_ColorFrameReadyHandler;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
+        }
+
+        private void KinectManager_ColorFrameReadyHandler()
+        {
+            DrawColorFrame();
+        }
+
+        private void DrawColorFrame()
+        {
+            _colorBitmap.WritePixels(
+                        new Int32Rect(0, 0, _colorBitmap.PixelWidth, _colorBitmap.PixelHeight),
+                        _kinectManager.ColorPixels,
+                        _colorBitmap.PixelWidth * sizeof(int),
+                        0);
         }
 
         private void LoadDrawing()
@@ -92,6 +109,9 @@ namespace KinectMirror
             _drawingGroup = new DrawingGroup();
             _drawingImage = new DrawingImage(_drawingGroup);
             Image.Source = _drawingImage;
+
+            _colorBitmap = new WriteableBitmap(_kinectManager.ColorFrameWidth, _kinectManager.ColorFrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);
+            ColorStreamImage.Source = _colorBitmap;
         }
 
         private void DrawSkeleton()
@@ -99,7 +119,7 @@ namespace KinectMirror
             using (DrawingContext dc = _drawingGroup.Open())
             {
                 // Draw a transparent background to set the render size
-                dc.DrawRectangle(Brushes.Black, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
+                dc.DrawRectangle(Brushes.Transparent, null, new Rect(0.0, 0.0, _kinectManager.ColorFrameWidth, _kinectManager.ColorFrameHeight));
 
                 if (_kinectManager.Skeletons.Count != 0)
                 {

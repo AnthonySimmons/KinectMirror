@@ -26,10 +26,15 @@
             </Button>
 
         </Grid>
+
+        <Viewbox Grid.Row="1" Stretch="Fill" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Image Name="ColorStreamImage" Width="Auto" Height="Auto"/>
+        </Viewbox>
         
         <Viewbox Grid.Row="1" Stretch="Fill" HorizontalAlignment="Center" VerticalAlignment="Center">
             <Image Name="Image" Width="Auto" Height="Auto"/>
         </Viewbox>
-        
+
+
     </Grid>
 </Window>

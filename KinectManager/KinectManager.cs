@@ -9,6 +9,8 @@ namespace KinectManager
 
     public delegate void SkeletonFrameReady();
 
+    public delegate void ColorFrameReady();
+
     public class KinectManager : IDisposable
     {
         private KinectSensor _kinectSensor;
@@ -17,6 +19,14 @@ namespace KinectManager
         public IList<Skeleton> Skeletons { get; } = new List<Skeleton>();
 
         public event SkeletonFrameReady SkeletonFrameReadyHandler;
+
+        public event ColorFrameReady ColorFrameReadyHandler;
+
+        public byte[] ColorPixels { get; private set; }
+
+        public int ColorFrameWidth => _kinectSensor.ColorStream.FrameWidth;
+
+        public int ColorFrameHeight => _kinectSensor.ColorStream.FrameHeight;
 
         public KinectManager()
         {
@@ -31,9 +41,28 @@ namespace KinectManager
                 throw new InvalidOperationException("Could not load Kinect Sensor");
             }
 
+            _kinectSensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
+            _kinectSensor.ColorFrameReady += KinectSensor_ColorFrameReady;
+
+            ColorPixels = new byte[_kinectSensor.ColorStream.FramePixelDataLength];
+
             _kinectSensor.SkeletonStream.Enable();
             _kinectSensor.SkeletonFrameReady += KinectSensor_SkeletonFrameReady;
             _kinectSensor.Start();
+        }
+
+        private void KinectSensor_ColorFrameReady(object sender, ColorImageFrameReadyEventArgs e)
+        {
+            using (ColorImageFrame colorFrame = e.OpenColorImageFrame())
+            {
+                if (colorFrame != null)
+                {
+                    // Copy the pixel data from the image to a temporary array
+                    colorFrame.CopyPixelDataTo(ColorPixels);
+                }
+            }
+
+            OnColorFrameReady();
         }
 
         private void KinectSensor_SkeletonFrameReady(object sender, SkeletonFrameReadyEventArgs e)
@@ -61,6 +90,11 @@ namespace KinectManager
         protected virtual void OnSkeletonFrameReady()
         {
             SkeletonFrameReadyHandler?.Invoke();
+        }
+
+        protected virtual void OnColorFrameReady()
+        {
+            ColorFrameReadyHandler?.Invoke();
         }
 
         public Point SkeletonPointToScreen(SkeletonPoint skelPoint)
