@@ -1,0 +1,35 @@
+﻿<Window x:Class="KinectMirror.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KinectMirror"
+        mc:Ignorable="d"
+        Title="Kinect Mirror" Height="800" Width="600" Loaded="WindowLoaded">
+    <Grid Background="Black">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Row="1" Grid.Column="2" Height="50" Width="150" FontWeight="Bold" FontSize="24" Click="Options_Click">
+                Options
+            </Button>
+
+        </Grid>
+        
+        <Viewbox Grid.Row="1" Stretch="Fill" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Image Name="Image" Width="Auto" Height="Auto"/>
+        </Viewbox>
+        
+    </Grid>
+</Window>
