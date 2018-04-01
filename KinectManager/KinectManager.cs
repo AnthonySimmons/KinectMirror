@@ -9,7 +9,7 @@ namespace KinectManager
 
     public delegate void SkeletonFrameReady();
 
-    public delegate void ColorFrameReady();
+    public delegate void ColorFrameReady(int bytesPerPixel);
 
     public delegate void DepthFrameReady();
 
@@ -40,6 +40,8 @@ namespace KinectManager
 
         public int MinDepth { get; private set; }
 
+        private readonly object _lock = new object();
+
         public KinectManager()
         {
             LoadSensor();
@@ -52,7 +54,7 @@ namespace KinectManager
             {
                 throw new InvalidOperationException("Could not load Kinect Sensor");
             }
-
+            //this.colorBitmap = new WriteableBitmap(this.sensor.ColorStream.FrameWidth, this.sensor.ColorStream.FrameHeight, 96.0, 96.0, PixelFormats.Gray16, null);
             _kinectSensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
             _kinectSensor.ColorFrameReady += KinectSensor_ColorFrameReady;
 
@@ -68,6 +70,34 @@ namespace KinectManager
             DepthPixels = new byte[_kinectSensor.DepthStream.FramePixelDataLength * sizeof(int)];
 
             _kinectSensor.Start();
+        }
+
+        public void EnableColorStream()
+        {
+            lock (_lock)
+            {
+                _kinectSensor.ColorFrameReady -= KinectSensor_ColorFrameReady;
+
+                _kinectSensor.ColorStream.Disable();
+                _kinectSensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
+                ColorPixels = new byte[_kinectSensor.ColorStream.FramePixelDataLength];
+
+                _kinectSensor.ColorFrameReady += KinectSensor_ColorFrameReady;
+            }
+        }
+
+        public void EnableInfraredStream()
+        {
+            lock (_lock)
+            {
+                _kinectSensor.ColorFrameReady -= KinectSensor_ColorFrameReady;
+
+                _kinectSensor.ColorStream.Disable();
+                _kinectSensor.ColorStream.Enable(ColorImageFormat.InfraredResolution640x480Fps30);
+                ColorPixels = new byte[_kinectSensor.ColorStream.FramePixelDataLength];
+
+                _kinectSensor.ColorFrameReady += KinectSensor_ColorFrameReady;
+            }
         }
 
         private void KinectSensor_DepthFrameReady(object sender, DepthImageFrameReadyEventArgs e)
@@ -121,16 +151,18 @@ namespace KinectManager
 
         private void KinectSensor_ColorFrameReady(object sender, ColorImageFrameReadyEventArgs e)
         {
-            using (ColorImageFrame colorFrame = e.OpenColorImageFrame())
+            lock (_lock)
             {
-                if (colorFrame != null)
+                using (ColorImageFrame colorFrame = e.OpenColorImageFrame())
                 {
-                    // Copy the pixel data from the image to a temporary array
-                    colorFrame.CopyPixelDataTo(ColorPixels);
+                    if (colorFrame != null)
+                    {
+                        // Copy the pixel data from the image to a temporary array
+                        colorFrame.CopyPixelDataTo(ColorPixels);
+                        OnColorFrameReady(colorFrame.BytesPerPixel);
+                    }
                 }
             }
-
-            OnColorFrameReady();
         }
 
         private void KinectSensor_SkeletonFrameReady(object sender, SkeletonFrameReadyEventArgs e)
@@ -160,9 +192,9 @@ namespace KinectManager
             SkeletonFrameReadyHandler?.Invoke();
         }
 
-        protected virtual void OnColorFrameReady()
+        protected virtual void OnColorFrameReady(int bytesPerPixel)
         {
-            ColorFrameReadyHandler?.Invoke();
+            ColorFrameReadyHandler?.Invoke(bytesPerPixel);
         }
 
         protected virtual void OnDepthFrameReady()
@@ -190,8 +222,11 @@ namespace KinectManager
                 Y = y,
                 Z = z
             };
-            DepthImagePoint depthPoint = _kinectSensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelPoint, DepthImageFormat.Resolution640x480Fps30);
-            return new Point(depthPoint.X, depthPoint.Y);
+            ColorImagePoint point = _kinectSensor.CoordinateMapper.MapSkeletonPointToColorPoint(skelPoint, ColorImageFormat.RgbResolution640x480Fps30);
+            return new Point(point.X, point.Y);
+            //ColorImagePoint depthPoint = _kinectSensor.CoordinateMapper.MapSkeletonPointToColorPoint(skelPoint, ColorImageFormat.RgbResolution640x480Fps30);
+            //ColorImagePoint point = _kinectSensor.CoordinateMapper.MapDepthPointToColorPoint(DepthImageFormat.Resolution640x480Fps30, depthPoint, ColorImageFormat.InfraredResolution640x480Fps30);
+            //return new Point(point.X, point.Y);
         }
 
         public int ElevationAngle

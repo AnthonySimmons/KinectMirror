@@ -258,14 +258,14 @@ namespace KinectMirror
             }
         }
 
-        private void KinectManager_ColorFrameReadyHandler()
+        private void KinectManager_ColorFrameReadyHandler(int bytesPerPixel)
         {
             if (_colorEnabled)
             {
                 _colorBitmap.WritePixels(
                             new Int32Rect(0, 0, _colorBitmap.PixelWidth, _colorBitmap.PixelHeight),
                             _kinectManager.ColorPixels,
-                            _colorBitmap.PixelWidth * sizeof(int),
+                            _colorBitmap.PixelWidth * bytesPerPixel,
                             0);
             }
         }
@@ -284,12 +284,30 @@ namespace KinectMirror
             options.SkeletonStreamChanged += Options_SkeletonStreamChanged;
             options.ColorStreamChanged += Options_ColorStreamChanged;
             options.DepthStreamChanged += Options_DepthStreamChanged;
+            options.InfraredStreamChanged += Options_InfraredStreamChanged;
 
             options.ShowDialog();
 
             options.SkeletonStreamChanged -= Options_SkeletonStreamChanged;
             options.ColorStreamChanged -= Options_ColorStreamChanged;
             options.DepthStreamChanged -= Options_DepthStreamChanged;
+            options.InfraredStreamChanged -= Options_InfraredStreamChanged;
+        }
+
+        private void Options_InfraredStreamChanged(bool isEnabled)
+        {
+            if (isEnabled)
+            {
+                _colorBitmap = new WriteableBitmap(_kinectManager.ColorFrameWidth, _kinectManager.ColorFrameHeight, 96.0, 96.0, PixelFormats.Gray16, null);
+                _kinectManager.EnableInfraredStream();
+                _colorEnabled = true;
+            }
+            else
+            {
+                _colorBitmap = new WriteableBitmap(_kinectManager.ColorFrameWidth, _kinectManager.ColorFrameHeight, 96.0, 96.0, PixelFormats.Bgr32, null);
+                _kinectManager.EnableColorStream();
+            }
+            ColorStreamImage.Source = _colorBitmap;
         }
 
         private void Options_DepthStreamChanged(bool isEnabled)

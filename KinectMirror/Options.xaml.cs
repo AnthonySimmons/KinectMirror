@@ -20,6 +20,7 @@ namespace KinectMirror
     public delegate void ColorStreamChanged(bool isEnabled);
     public delegate void DepthStreamChanged(bool isEnabled);
     public delegate void SkeletonStreamChanged(bool isEnabled);
+    public delegate void InfraredStreamChanged(bool isEnabled);
 
     /// <summary>
     /// Interaction logic for Options.xaml
@@ -29,6 +30,7 @@ namespace KinectMirror
         public event ColorStreamChanged ColorStreamChanged;
         public event DepthStreamChanged DepthStreamChanged;
         public event SkeletonStreamChanged SkeletonStreamChanged;
+        public event InfraredStreamChanged InfraredStreamChanged;
 
         private bool _isElevationAngleDrag;
 
@@ -79,6 +81,11 @@ namespace KinectMirror
             OnColorStreamChanged();
         }
 
+        private void RadioButtonInfrared_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            OnInfraredStreamChanged();
+        }
+
         private void RadioButtonDepth_CheckChanged(object sender, RoutedEventArgs e)
         {
             OnDepthStreamChanged();
@@ -102,6 +109,11 @@ namespace KinectMirror
         protected virtual void OnDepthStreamChanged()
         {
             DepthStreamChanged?.Invoke(RadioButtonDepth.IsChecked ?? false);
+        }
+
+        protected virtual void OnInfraredStreamChanged()
+        {
+            InfraredStreamChanged?.Invoke(RadioButtonInfrared.IsChecked ?? false);
         }
     }
 }
