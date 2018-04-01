@@ -71,6 +71,8 @@ namespace KinectMirror
 
         private WriteableBitmap _colorBitmap;
 
+        private bool _depthEnabled = false, _colorEnabled = true, _skeletonEnabled = true;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -83,25 +85,12 @@ namespace KinectMirror
                 _kinectManager = new KinectManager();
                 _kinectManager.SkeletonFrameReadyHandler += KinectManager_SkeletonFrameReadyHandler;
                 _kinectManager.ColorFrameReadyHandler += KinectManager_ColorFrameReadyHandler;
+                _kinectManager.DepthFrameReadyHandler += KinectManager_DepthFrameReadyHandler;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
-        }
-
-        private void KinectManager_ColorFrameReadyHandler()
-        {
-            DrawColorFrame();
-        }
-
-        private void DrawColorFrame()
-        {
-            _colorBitmap.WritePixels(
-                        new Int32Rect(0, 0, _colorBitmap.PixelWidth, _colorBitmap.PixelHeight),
-                        _kinectManager.ColorPixels,
-                        _colorBitmap.PixelWidth * sizeof(int),
-                        0);
         }
 
         private void LoadDrawing()
@@ -145,6 +134,15 @@ namespace KinectMirror
                 _drawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0.0, 0.0, RenderWidth, RenderHeight));
             }
 
+        }
+
+        private void ClearSkeletonImage()
+        {
+            using (DrawingContext dc = _drawingGroup.Open())
+            {
+                // Draw a transparent background to set the render size
+                dc.DrawRectangle(Brushes.Transparent, null, new Rect(0.0, 0.0, _kinectManager.ColorFrameWidth, _kinectManager.ColorFrameHeight));
+            }
         }
 
         /// <summary>
@@ -240,8 +238,38 @@ namespace KinectMirror
 
         private void KinectManager_SkeletonFrameReadyHandler()
         {
-            DrawSkeleton();
+            if (_skeletonEnabled)
+            {
+                DrawSkeleton();
+            }
         }
+
+
+        private void KinectManager_DepthFrameReadyHandler()
+        {
+            if (_depthEnabled)
+            {
+                // Write the pixel data into our bitmap
+                _colorBitmap.WritePixels(
+                    new Int32Rect(0, 0, _colorBitmap.PixelWidth, _colorBitmap.PixelHeight),
+                    _kinectManager.DepthPixels,
+                    _colorBitmap.PixelWidth * sizeof(int),
+                    0);
+            }
+        }
+
+        private void KinectManager_ColorFrameReadyHandler()
+        {
+            if (_colorEnabled)
+            {
+                _colorBitmap.WritePixels(
+                            new Int32Rect(0, 0, _colorBitmap.PixelWidth, _colorBitmap.PixelHeight),
+                            _kinectManager.ColorPixels,
+                            _colorBitmap.PixelWidth * sizeof(int),
+                            0);
+            }
+        }
+
 
         private void WindowLoaded(object sender, RoutedEventArgs e)
         {
@@ -252,7 +280,35 @@ namespace KinectMirror
         private void Options_Click(object sender, RoutedEventArgs e)
         {
             Options options = new Options(_kinectManager);
-            options.Show();
+
+            options.SkeletonStreamChanged += Options_SkeletonStreamChanged;
+            options.ColorStreamChanged += Options_ColorStreamChanged;
+            options.DepthStreamChanged += Options_DepthStreamChanged;
+
+            options.ShowDialog();
+
+            options.SkeletonStreamChanged -= Options_SkeletonStreamChanged;
+            options.ColorStreamChanged -= Options_ColorStreamChanged;
+            options.DepthStreamChanged -= Options_DepthStreamChanged;
+        }
+
+        private void Options_DepthStreamChanged(bool isEnabled)
+        {
+            _depthEnabled = isEnabled;
+        }
+
+        private void Options_ColorStreamChanged(bool isEnabled)
+        {
+            _colorEnabled = isEnabled;
+        }
+
+        private void Options_SkeletonStreamChanged(bool isEnabled)
+        {
+            _skeletonEnabled = isEnabled;
+            if (!_skeletonEnabled)
+            {
+                ClearSkeletonImage();
+            }
         }
     }
 }

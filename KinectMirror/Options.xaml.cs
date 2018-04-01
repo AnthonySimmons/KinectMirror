@@ -17,11 +17,19 @@ namespace KinectMirror
 {
     using KinectManager;
 
+    public delegate void ColorStreamChanged(bool isEnabled);
+    public delegate void DepthStreamChanged(bool isEnabled);
+    public delegate void SkeletonStreamChanged(bool isEnabled);
+
     /// <summary>
     /// Interaction logic for Options.xaml
     /// </summary>
     public partial class Options : Window
     {
+        public event ColorStreamChanged ColorStreamChanged;
+        public event DepthStreamChanged DepthStreamChanged;
+        public event SkeletonStreamChanged SkeletonStreamChanged;
+
         private bool _isElevationAngleDrag;
 
         private readonly KinectManager _kinectManager;
@@ -64,6 +72,36 @@ namespace KinectMirror
         private void ElevationSlider_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
         {
             _isElevationAngleDrag = true;
+        }
+
+        private void RadioButtonColor_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            OnColorStreamChanged();
+        }
+
+        private void RadioButtonDepth_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            OnDepthStreamChanged();
+        }
+
+        private void CheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            OnSkeletonStreamChanged();
+        }
+
+        protected virtual void OnSkeletonStreamChanged()
+        {
+            SkeletonStreamChanged?.Invoke(CheckBoxSkeleton.IsChecked ?? false);
+        }
+
+        protected virtual void OnColorStreamChanged()
+        {
+            ColorStreamChanged?.Invoke(RadioButtonColor.IsChecked ?? false);
+        }
+
+        protected virtual void OnDepthStreamChanged()
+        {
+            DepthStreamChanged?.Invoke(RadioButtonDepth.IsChecked ?? false);
         }
     }
 }
